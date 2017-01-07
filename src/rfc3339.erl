@@ -26,6 +26,16 @@
 
 -type error() :: badarg | baddate | badtime | badyear | badday | badhour | badminute | badsecond | badusec | badtimezone.
 
+-record(rfc3339, { year :: integer()
+                 , month :: integer()
+                 , day :: integer()
+                 , hour :: integer()
+                 , min :: integer()
+                 , sec :: integer()
+                 , usec :: integer()
+                 , tz_offset :: integer()
+                 }).
+
 %% -spec parse_to_local_datetime(binary()) -> {date(), time()}
 parse_to_local_datetime(Bin) ->
     {ok, {Date, Time, _,  TZ}} = parse(Bin),
@@ -45,7 +55,7 @@ parse(_) -> {error, badarg}.
 -spec to_map(binary()) -> {ok, map()} | {error, error()}.
 to_map(Bin) when is_binary(Bin) ->
   case parse(Bin) of
-    {ok, {Date, Time, USec, Tz}} -> mapify(Date, Time, USec, Tz, #{});
+    {ok, {Date, Time, USec, Tz}} -> mapify(Date, Time, USec, Tz, #rfc3339{});
     {error, Error}               -> {error, Error}
   end;
 to_map(_) -> {error, badarg}.
@@ -68,21 +78,21 @@ to_time(Bin, Unit) when is_binary(Bin) ->
 
 mapify({Year, Month, Day}, Time, USec, Tz, Result)
 when is_integer(Year), is_integer(Month), is_integer(Day) ->
-  mapify(Time, USec, Tz, maps:merge(Result, #{year => Year, month => Month, day => Day}));
+  mapify(Time, USec, Tz, Result#rfc3339{year = Year, month = Month, day = Day});
 mapify(_, _, _, _, _) -> {error, badarg}.
 
 mapify({Hour, Min, Sec}, USec, Tz, Result)
 when is_integer(Hour), is_integer(Min), is_integer(Sec) ->
-  mapify(USec, Tz, maps:merge(Result, #{hour => Hour, min => Min, sec => Sec}));
+  mapify(USec, Tz, Result#rfc3339{hour = Hour, min = Min, sec = Sec});
 mapify(_, _, _, _) -> {error, badarg}.
 
 mapify(undefined, Tz, Result) -> mapify(Tz, Result);
 mapify(USec, Tz, Result) when is_integer(USec) ->
-  mapify(Tz, maps:merge(Result, #{usec => USec}));
+  mapify(Tz, Result#rfc3339{usec = USec});
 mapify(_, _, _) -> {error, badarg}.
 
 mapify(undefined, Result) -> Result;
-mapify(Tz, Result) when is_integer(Tz) -> maps:merge(Result, #{tz_offset => Tz});
+mapify(Tz, Result) when is_integer(Tz) -> Result#rfc3339{tz_offset = Tz};
 mapify(_, _) -> {error, badarg}.
 
 mapify(Time) when is_integer(Time) ->
@@ -90,16 +100,16 @@ mapify(Time) when is_integer(Time) ->
   GregorianSeconds = Time div 1000000 + Epoch,
   {{Year, Month, Day}, {Hour, Min, Sec}} = calendar:gregorian_seconds_to_datetime(GregorianSeconds),
   USec = Time rem 1000000,
-  #{year => Year, month => Month, day => Day, hour => Hour, min => Min, sec => Sec, usec => USec};
+  #rfc3339{year = Year, month = Month, day = Day, hour = Hour, min = Min, sec = Sec, usec = USec};
 mapify(_) -> {error, badarg}.
 
 -spec format(map() | {date(), time(), usec(), tz()} | datetime() | integer()) -> {ok, binary()} | {error, error()}.
 format({Date, Time, USec, Tz})
 when is_tuple(Date), is_tuple(Time) ->
-  format(mapify(Date, Time, USec, Tz, #{}));
+  format(mapify(Date, Time, USec, Tz, #rfc3339{}));
 format({Date, Time})
 when is_tuple(Date), is_tuple(Time) ->
-  format(mapify(Date, Time, undefined, undefined, #{}));
+  format(mapify(Date, Time, undefined, undefined, #rfc3339{}));
 format(Time) when is_integer(Time) ->
   %% USec is the greatest fidelity supported. nano seconds are converted lossily
   USec = erlang:convert_time_unit(Time, native, micro_seconds),
