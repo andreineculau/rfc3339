@@ -26,14 +26,14 @@
 
 -type error() :: badarg | baddate | badtime | badyear | badday | badhour | badminute | badsecond | badusec | badtimezone.
 
-%% -spec parse_to_local_datetime(binary()) -> {date(), time()} 
+%% -spec parse_to_local_datetime(binary()) -> {date(), time()}
 parse_to_local_datetime(Bin) ->
     {ok, {Date, Time, _,  TZ}} = parse(Bin),
     TZSecs = calendar:datetime_to_gregorian_seconds({Date, Time}),
     UTCDateTime = calendar:gregorian_seconds_to_datetime(case TZ of
                                                              _ when is_integer(TZ) ->
                                                                  TZSecs + (60*TZ);
-                                                             _ -> 	
+                                                             _ ->
                                                                  TZSecs
                                                          end),
     calendar:universal_time_to_local_time(UTCDateTime).
@@ -64,7 +64,7 @@ to_time(Bin, Unit) when is_binary(Bin) ->
       {ok, erlang:convert_time_unit(GregorianSeconds - Epoch, seconds, Unit) + U};
     {error, Error} -> {error, Error}
   end.
-      
+
 
 mapify({Year, Month, Day}, Time, USec, Tz, Result)
 when is_integer(Year), is_integer(Month), is_integer(Day) ->
@@ -73,7 +73,7 @@ mapify(_, _, _, _, _) -> {error, badarg}.
 
 mapify({Hour, Min, Sec}, USec, Tz, Result)
 when is_integer(Hour), is_integer(Min), is_integer(Sec) ->
-  mapify(USec, Tz, maps:merge(Result, #{hour => Hour, min => Min, sec => Sec})); 
+  mapify(USec, Tz, maps:merge(Result, #{hour => Hour, min => Min, sec => Sec}));
 mapify(_, _, _, _) -> {error, badarg}.
 
 mapify(undefined, Tz, Result) -> mapify(Tz, Result);
@@ -101,7 +101,7 @@ format({Date, Time})
 when is_tuple(Date), is_tuple(Time) ->
   format(mapify(Date, Time, undefined, undefined, #{}));
 format(Time) when is_integer(Time) ->
-  %% USec is the greatest fidelity supported. nano seconds are converted lossily 
+  %% USec is the greatest fidelity supported. nano seconds are converted lossily
   USec = erlang:convert_time_unit(Time, native, micro_seconds),
   format(mapify(USec));
 format(Dt) when is_map(Dt) ->

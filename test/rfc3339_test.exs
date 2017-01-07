@@ -16,7 +16,7 @@ defmodule :rfc3339_test do
   test "decode 1900-01-01T00:00:00.0+00:00" do
     assert {:ok, {{1900, 1, 1}, {0, 0, 0}, 0, 0}} = :rfc3339.parse("1900-01-01T00:00:00.0+00:00")
   end
-  
+
   test "decode 2016-01-24T00:00:00.0+00:00" do
     assert {:ok, {{2016, 1, 24}, {0, 0, 0}, 0, 0}} = :rfc3339.parse("2016-01-24T00:00:00.0+00:00")
   end
@@ -144,7 +144,7 @@ defmodule RFC3339Test do
   test "decode 1900-01-01T00:00:00.0+00:00" do
     assert %RFC3339{year: 1900, month: 1, day: 1} = RFC3339.parse("1900-01-01T00:00:00.0+00:00")
   end
-  
+
   test "decode 2016-01-24T00:00:00.0+00:00" do
     assert %RFC3339{year: 2016, month: 1, day: 24} = RFC3339.parse("2016-01-24T00:00:00.0+00:00")
   end
@@ -340,7 +340,7 @@ defmodule :rfc3339_inttime do
   end
 
   test "to_time 1918-11-11T11:00:00+02:00" do
-    assert {:ok, -1613818800000000} = :rfc3339.to_time("1918-11-11T11:00:00+02:00", :micro_seconds)                      
+    assert {:ok, -1613818800000000} = :rfc3339.to_time("1918-11-11T11:00:00+02:00", :micro_seconds)
   end
 
   test "encode 1918-11-11T11:00:00+02:00" do
