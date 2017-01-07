@@ -71,8 +71,8 @@ to_time(Bin, Unit) when is_binary(Bin) ->
       Epoch = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
       Time = {Hour, Min + or_zero(Tz), Sec},
       GregorianSeconds = calendar:datetime_to_gregorian_seconds({Date, Time}),
-      U = erlang:convert_time_unit(or_zero(USec), micro_seconds, Unit),
-      {ok, erlang:convert_time_unit(GregorianSeconds - Epoch, seconds, Unit) + U};
+      U = convert_time_unit(or_zero(USec), micro_seconds, Unit),
+      {ok, convert_time_unit(GregorianSeconds - Epoch, seconds, Unit) + U};
     {error, Error} -> {error, Error}
   end.
 
@@ -113,7 +113,7 @@ when is_tuple(Date), is_tuple(Time) ->
   format(mapify(Date, Time, undefined, undefined, #rfc3339{}));
 format(Time) when is_integer(Time) ->
   %% USec is the greatest fidelity supported. nano seconds are converted lossily
-  USec = erlang:convert_time_unit(Time, native, micro_seconds),
+  USec = convert_time_unit(Time, native, micro_seconds),
   format(mapify(USec));
 format(#rfc3339{} = Dt) ->
   Date = format_date(Dt),
@@ -122,7 +122,7 @@ format(#rfc3339{} = Dt) ->
 
 -spec format(integer(), erlang:time_unit()) -> {ok, binary()} | {error, error()}.
 format(Time, Unit) when is_integer(Time) ->
-  USec = erlang:convert_time_unit(Time, Unit, micro_seconds),
+  USec = convert_time_unit(Time, Unit, micro_seconds),
   format(mapify(USec)).
 
 
@@ -316,3 +316,30 @@ g(_, _, _, _) ->
 
 or_zero(undefined) -> 0;
 or_zero(N) when is_integer(N) -> N.
+
+convert_time_unit(Time, FromUnit, ToUnit) ->
+  FromMultiplier = integer_time_unit(FromUnit),
+  ToMultiplier = integer_time_unit(ToUnit),
+  case Time < 0 of
+	true ->
+      Time * ToMultiplier - (FromMultiplier - 1);
+	false ->
+      Time * ToMultiplier
+  end div FromMultiplier.
+
+integer_time_unit(second) ->
+  1;
+integer_time_unit(millisecond) ->
+  1000;
+integer_time_unit(microsecond) ->
+  1000 * 1000;
+integer_time_unit(nanosecond) ->
+  1000 * 1000 * 1000;
+integer_time_unit(native) ->
+  integer_time_unit(microseconds);
+integer_time_unit(Unit)
+  when is_integer(Unit) andalso
+       Unit > 0 ->
+  Unit;
+integer_time_unit(Unit) ->
+  erlang:error(badarg, [Unit]).
